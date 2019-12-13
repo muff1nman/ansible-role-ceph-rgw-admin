@@ -1,0 +1,17 @@
+---
+- name: list existing rgw users
+  command: >
+    radosgw-admin user list
+  register: rgw_user_list
+  changed_when: False
+- debug:
+    var: rgw_user_list.stdout | from_json
+- name: create rgw user
+  command: >
+    radosgw-admin user create --uid={{ item.uid }}  --display-name="{{ item.display }}" --access-key="{{ item.access_key }}" --secret-key="{{ item.secret_key }}"
+  loop: "{{ rgw_admins }}"
+  when: item.uid not in (rgw_user_list.stdout | from_json )
+- name: add admin perms to user
+  command: >
+    radosgw-admin --id admin caps add --caps="buckets=*;users=*;usage=*;metadata=*" --uid={{ item.uid }}
+  loop: "{{ rgw_admins }}"
